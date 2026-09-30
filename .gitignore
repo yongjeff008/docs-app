@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# .NET 编译产物
+bin/
+obj/
+*.user
+.vs/
+
+# 数据库与备份（含用户数据，不入库）
+*.db
+*.db-shm
+*.db-wal
+*.db.bak*
+backup-*.tar.gz
+
+# 首次启动生成的初始管理员密码
+initial-admin.txt

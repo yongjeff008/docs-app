@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>文档管理</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='2' width='18' height='20' rx='3' fill='%233b82f6'/%3E%3Cpath d='M7 8h10M7 12h10M7 16h6' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <!-- 顶栏 -->
+  <header class="topbar">
+    <button id="menuBtn" class="icon-btn only-mobile" data-icon="menu" aria-label="打开文件夹列表"></button>
+    <div class="brand" data-icon="logo"><span>文档管理</span></div>
+
+    <div class="search">
+      <span class="search-icon" data-icon="search"></span>
+      <input id="searchInput" type="search" placeholder="搜索文档" autocomplete="off" aria-label="搜索文档">
+      <button id="searchClear" class="search-clear" data-icon="close" aria-label="清除搜索" hidden></button>
+    </div>
+
+    <div class="user-menu">
+      <button id="userBtn" class="user-btn" aria-haspopup="true">
+        <span id="userAvatar" class="avatar">管</span>
+        <span id="userName" class="user-name">admin</span>
+        <span data-icon="chevronDown"></span>
+      </button>
+      <div id="userDropdown" class="dropdown" role="menu">
+        <div class="dropdown-header" id="userMenuName"></div>
+        <a id="adminLink" class="menu-item" href="/admin.html" data-icon="settings" role="menuitem" hidden><span>系统管理</span></a>
+        <button id="changePwdBtn" class="menu-item" data-icon="key" role="menuitem"><span>修改密码</span></button>
+        <button id="logoutBtn" class="menu-item" data-icon="logout" role="menuitem"><span>退出登录</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- 侧栏：文件夹树（手机端为抽屉） -->
+    <aside id="sidebar" class="sidebar" aria-label="文件夹">
+      <div class="sidebar-title">文件夹</div>
+      <nav id="tree" class="tree"></nav>
+      <div class="sidebar-footer">
+        <button id="newRootFolderBtn" class="btn btn-ghost btn-block" data-icon="plus"><span>新建文件夹</span></button>
+      </div>
+    </aside>
+    <div id="drawerMask" class="drawer-mask"></div>
+
+    <!-- 主区：列表 / 预览 -->
+    <main id="main" class="main">
+      <section id="listView" class="list-view">
+        <div class="main-header">
+          <nav id="breadcrumb" class="breadcrumb" aria-label="当前位置"></nav>
+          <button id="permChip" class="perm-chip" type="button" hidden></button>
+          <div class="main-actions">
+            <button id="newSubFolderBtn" class="btn" data-icon="folderPlus" disabled><span>新建子文件夹</span></button>
+            <button id="uploadBtn" class="btn btn-primary" data-icon="upload" disabled><span>上传</span></button>
+          </div>
+        </div>
+        <div id="uploadPanel" class="upload-panel" hidden></div>
+        <div id="docList" class="doc-list"></div>
+      </section>
+
+      <section id="previewView" class="preview-view" hidden>
+        <div class="preview-header">
+          <button id="previewBack" class="btn btn-ghost" data-icon="back"><span>返回列表</span></button>
+          <h2 id="previewTitle" class="preview-title"></h2>
+          <div class="preview-actions">
+            <a id="previewDownload" class="icon-btn" data-icon="download" href="#" download title="下载" aria-label="下载"></a>
+            <button id="previewMore" class="icon-btn" data-icon="more" title="更多操作" aria-label="更多操作"></button>
+          </div>
+        </div>
+        <div id="previewBody" class="preview-body"></div>
+      </section>
+
+      <div id="dropOverlay" class="drop-overlay">
+        <div class="drop-box" data-icon="upload"><p>松开鼠标即可上传</p></div>
+      </div>
+    </main>
+  </div>
+
+  <input type="file" id="fileInput" multiple hidden>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+  <div id="modalRoot"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/tree.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/permissions.js"></script>
+  <script src="js/viewer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

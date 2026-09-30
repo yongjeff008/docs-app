@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>系统管理 · 文档管理</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='2' width='18' height='20' rx='3' fill='%233b82f6'/%3E%3Cpath d='M7 8h10M7 12h10M7 16h6' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="admin-page">
+  <!-- 顶栏 -->
+  <header class="topbar">
+    <a href="/" class="icon-btn" data-icon="back" aria-label="返回文档" title="返回文档"></a>
+    <div class="brand" data-icon="logo"><span>系统管理</span></div>
+
+    <div class="user-menu">
+      <button id="userBtn" class="user-btn" aria-haspopup="true">
+        <span id="userAvatar" class="avatar">管</span>
+        <span id="userName" class="user-name">admin</span>
+        <span data-icon="chevronDown"></span>
+      </button>
+      <div id="userDropdown" class="dropdown" role="menu">
+        <div class="dropdown-header" id="userMenuName"></div>
+        <a class="menu-item" href="/" data-icon="folder" role="menuitem"><span>返回文档</span></a>
+        <button id="changePwdBtn" class="menu-item" data-icon="key" role="menuitem"><span>修改密码</span></button>
+        <button id="logoutBtn" class="menu-item" data-icon="logout" role="menuitem"><span>退出登录</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="users" role="tab" data-icon="users"><span>用户</span></button>
+      <button class="tab" data-tab="departments" role="tab" data-icon="building"><span>部门</span></button>
+      <button class="tab" data-tab="permissions" role="tab" data-icon="shield"><span>权限总览</span></button>
+      <button class="tab" data-tab="logs" role="tab" data-icon="list"><span>操作日志</span></button>
+    </nav>
+
+    <!-- 用户 -->
+    <section class="admin-panel" data-panel="users">
+      <div class="admin-toolbar">
+        <div class="search admin-search">
+          <span class="search-icon" data-icon="search"></span>
+          <input id="userSearch" type="search" placeholder="搜索用户名 / 姓名 / 部门" autocomplete="off" aria-label="搜索用户">
+        </div>
+        <button id="newUserBtn" class="btn btn-primary" data-icon="plus"><span>新建用户</span></button>
+      </div>
+      <div id="userList" class="data-list"></div>
+    </section>
+
+    <!-- 部门 -->
+    <section class="admin-panel" data-panel="departments" hidden>
+      <div class="admin-toolbar">
+        <p class="admin-hint">部门用于批量授权：给部门授权后，部门内所有成员自动获得相应权限。</p>
+        <button id="newDeptBtn" class="btn btn-primary" data-icon="plus"><span>新建部门</span></button>
+      </div>
+      <div id="deptList" class="data-list"></div>
+    </section>
+
+    <!-- 权限总览 -->
+    <section class="admin-panel" data-panel="permissions" hidden>
+      <div class="admin-toolbar">
+        <div class="search admin-search">
+          <span class="search-icon" data-icon="search"></span>
+          <input id="permSearch" type="search" placeholder="搜索路径 / 授权对象" autocomplete="off" aria-label="搜索">
+        </div>
+        <select id="permFilter" class="input perm-filter" aria-label="筛选">
+          <option value="">全部</option>
+          <option value="broken">已断开继承</option>
+          <option value="own">继承 + 单独授权</option>
+        </select>
+      </div>
+      <p class="admin-hint perm-legend">
+        列出所有断开继承或有单独授权的文件夹与文档；未列出的均完全继承上级。
+        <span class="perm-badge broken" data-icon="unlink"></span>已断开继承
+        <span class="perm-badge own" data-icon="shield"></span>继承 + 单独授权
+      </p>
+      <div id="permList" class="data-list"></div>
+    </section>
+
+    <!-- 操作日志 -->
+    <section class="admin-panel" data-panel="logs" hidden>
+      <div class="admin-toolbar">
+        <div class="search admin-search">
+          <span class="search-icon" data-icon="search"></span>
+          <input id="logSearch" type="search" placeholder="搜索操作人 / 操作 / 对象" autocomplete="off" aria-label="搜索日志">
+        </div>
+      </div>
+      <div id="logList" class="data-list"></div>
+      <div id="logPager" class="pager"></div>
+    </section>
+  </main>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+  <div id="modalRoot"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/tree.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
