@@ -18,8 +18,21 @@ builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = maxRequestBy
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = maxRequestBytes);
 
 // ---------- 数据库 ----------
+var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=documents.db";
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=documents.db"));
+    options.UseSqlite(connectionString));
+
+// ---------- 反向代理（Render 等 TLS 边缘） ----------
+// TLS 在平台边缘终止，进程只收到 HTTP，并带 X-Forwarded-Proto / X-Forwarded-For。
+// 默认只信任回环地址，Render 的代理不在回环上，转发头会被忽略，Cookie 的 Secure
+// 标志会和浏览器实际使用的 HTTPS 不一致。清空已知代理后按转发头还原协议。
+// 不要再启用 UseHttpsRedirection：应用内强制跳 HTTPS 会和边缘代理形成重定向循环。
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // ---------- 认证（Cookie） ----------
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -28,6 +41,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.Name = "DocumentsApp.Auth";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        // 与请求协议一致：信任转发头后，Render 上的登录 Cookie 会带 Secure
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
         options.LoginPath = "/login.html";
@@ -93,14 +108,15 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
+// SQLite 不会创建父目录；存储目录在 FileStorageService 构造时创建
+EnsureSqliteDataDirectory(connectionString);
+app.Services.GetRequiredService<IFileStorageService>();
+
 // 启动时自动建库 + 首次启动创建初始管理员
 await DbSeeder.SeedAsync(app.Services);
 
-// 经本机反向代理（如 Tailscale Funnel）访问时，从 X-Forwarded-For 取真实客户端 IP（默认只信任本机代理）
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+// 必须放在会读取协议 / 客户端 IP 的中间件之前
+app.UseForwardedHeaders();
 
 // 全局异常兜底：API 返回中文 JSON 错误
 app.UseExceptionHandler(errorApp =>
@@ -157,3 +173,32 @@ app.Map("/api/{**rest}", (HttpContext ctx) =>
     Results.Json(new { message = "接口不存在" }, statusCode: StatusCodes.Status404NotFound));
 
 app.Run();
+
+/// <summary>
+/// 按 SQLite 连接串中的 Data Source 创建数据库文件所在目录（不存在时）。
+/// </summary>
+static void EnsureSqliteDataDirectory(string connectionString)
+{
+    string? dataSource = null;
+    foreach (var part in connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var eq = part.IndexOf('=');
+        if (eq <= 0) continue;
+        var key = part[..eq].Trim();
+        if (!key.Equals("Data Source", StringComparison.OrdinalIgnoreCase)
+            && !key.Equals("DataSource", StringComparison.OrdinalIgnoreCase)
+            && !key.Equals("Filename", StringComparison.OrdinalIgnoreCase))
+            continue;
+        dataSource = part[(eq + 1)..].Trim().Trim('"');
+        break;
+    }
+
+    if (string.IsNullOrWhiteSpace(dataSource)
+        || dataSource.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
+        return;
+
+    var fullPath = Path.GetFullPath(dataSource);
+    var directory = Path.GetDirectoryName(fullPath);
+    if (!string.IsNullOrEmpty(directory))
+        Directory.CreateDirectory(directory);
+}
