@@ -41,8 +41,40 @@ dotnet run --urls "http://0.0.0.0:8900"
 | `Storage:MaxFileSizeMB` | 单文件上传上限 | `100` |
 | `Preview:LibreOfficePath` | soffice 可执行文件路径 | `/Applications/LibreOffice.app/Contents/MacOS/soffice` |
 | `Preview:TimeoutSeconds` | 单次转换超时 | `30` |
+| `InitialAdmin:Username` / `InitialAdmin:Password` | 首次启动的管理员账号 | 用户名默认 `admin`；未设密码时随机生成并写入 `initial-admin.txt` |
+
+同一配置键可用环境变量覆盖（把 `:` 写成 `__`）：`ConnectionStrings__Default`、`Storage__RootPath`、`Preview__LibreOfficePath`、`InitialAdmin__Username`、`InitialAdmin__Password`。本地 `dotnet run` 仍使用上面的 Mac 路径。容器里的默认路径见下一节。
 
 未安装 LibreOffice 时，Office 文档预览会提示“服务器未安装 LibreOffice”，其余功能不受影响。
+
+## 部署到 Render
+
+仓库根目录的 `Dockerfile` 与 `render.yaml` 把应用部署成 Render 上的 Docker Web Service（免费套餐）。Render 用 BuildKit 从根目录 Dockerfile 构建镜像：`sdk:8.0` 编译，`aspnet:8.0` 运行，并安装 LibreOffice Writer / Calc / Impress（headless）和 `fonts-noto-cjk`，以便 Office 预览和中文文档渲染。
+
+容器内默认值（可被环境变量覆盖）：
+
+| 环境变量 | 容器默认 |
+|:---|:---|
+| `ConnectionStrings__Default` | `Data Source=/data/documents.db` |
+| `Storage__RootPath` | `/data/storage` |
+| `Preview__LibreOfficePath` | `/usr/bin/soffice` |
+| 监听地址 | `ASPNETCORE_URLS=http://0.0.0.0:${PORT}`，`PORT` 缺省 `10000` |
+
+启动时如果数据库文件所在目录或存储目录不存在，会自动创建。
+
+部署步骤：
+
+1. 把包含 `Dockerfile` 和 `render.yaml` 的提交推到 GitHub。
+2. 打开 Blueprint 创建页：<https://dashboard.render.com/blueprint/new?repo=https://github.com/yongjeff008/docs-app>
+3. 确认服务 `documents-app`（Docker、`plan: free`）后点击 Apply。
+4. 在服务的 Environment 中复制 Render 生成的 `InitialAdmin__Password`。用户名是 `admin`（`InitialAdmin__Username`）。
+5. 打开 `https://<服务名>.onrender.com/login.html` 登录。
+
+免费套餐没有持久化磁盘，数据库和上传的文件在重新部署、重启或闲置休眠后会丢失，适合演示，不要为了留住数据去挂磁盘。实例被清空后，下次启动会用当前的 `InitialAdmin__Password` 重新创建管理员；已经有数据库时，改这个环境变量不会改掉已存在的密码。免费套餐内存是 512MB，很大的 Office 文件转换可能失败，小文档一般够用。
+
+TLS 在 Render 边缘终止，进程只收到 HTTP。应用信任 `X-Forwarded-Proto`，按外部的 HTTPS 给登录 Cookie 打上 Secure，并且不会在进程里再强制跳转到 HTTPS，避免和边缘代理形成重定向循环。
+
+部署前不需要手填密码。若要改用自己的初始密码，在服务第一次启动前把 `InitialAdmin__Password` 改成该值。其余路径一般不用改；只有想换数据库文件、存储目录或 soffice 位置时，才覆盖上表里的三个变量。
 
 ## API 一览
 

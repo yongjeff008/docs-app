@@ -1,0 +1,23 @@
+# Docker web service for the document app.
+# The free plan has no persistent disk. SQLite and uploaded files live on the
+# instance filesystem and are lost on restart, redeploy, or spin-down.
+# That is acceptable for a demo; do not attach a disk.
+services:
+  - type: web
+    name: documents-app
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /login.html
+    envVars:
+      - key: InitialAdmin__Username
+        value: admin
+      - key: InitialAdmin__Password
+        generateValue: true
+      - key: ConnectionStrings__Default
+        value: Data Source=/data/documents.db
+      - key: Storage__RootPath
+        value: /data/storage
+      - key: Preview__LibreOfficePath
+        value: /usr/bin/soffice

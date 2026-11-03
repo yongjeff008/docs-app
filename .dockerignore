@@ -1,0 +1,12 @@
+.git
+**/.DS_Store
+**/.vs
+**/bin
+**/obj
+**/*.user
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.db.bak*
+**/initial-admin.txt
+**/backup-*.tar.gz
